@@ -1,5 +1,16 @@
+# Secrets - NEVER commit
+.env
+
+# Python
+venv/
 .venv/
 __pycache__/
-.pytest_cache/
-.env
 *.pyc
+.pytest_cache/
+
+# Local vector DB
+chroma_db/
+
+# OS / editor
+.DS_Store
+.vscode/
