@@ -1,4 +1,4 @@
-from app import build_news_alert_blocks
+from week1.day5_slack_bot import build_news_alert_blocks
 
 
 def test_news_alert_contains_expected_story_and_actions() -> None:
