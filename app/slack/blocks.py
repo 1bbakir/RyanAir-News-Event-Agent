@@ -16,6 +16,7 @@ COLOR_COMPETITOR = "#7B1FA2"  # purple
 COLOR_NEUTRAL = "#9AA0A6"  # grey
 
 THREAT_LABEL = {
+    "critical": ":rotating_light: Critical",
     "high": ":red_circle: High",
     "medium": ":large_orange_circle: Medium",
     "low": ":large_yellow_circle: Low",
@@ -41,7 +42,7 @@ def _cut(text: str, limit: int = MAX_TEXT) -> str:
 
 
 def alert_color(alert: Alert) -> str:
-    if alert.threat_level == "high":
+    if alert.threat_level in ("high", "critical"):
         return COLOR_HIGH
     if alert.is_competitor:
         return COLOR_COMPETITOR
@@ -55,7 +56,11 @@ def alert_color(alert: Alert) -> str:
 def alert_message(alert: Alert) -> dict:
     """Colour-coded news alert card with the [Draft PR Response] button."""
     tag = ":crossed_swords: Competitor" if alert.is_competitor else ":airplane: Ryanair"
-    published = f"<!date^{int(alert.published_at.timestamp())}^{{date_short_pretty}} {{time}}|{alert.published_at:%Y-%m-%d %H:%M} UTC>"
+    if alert.published_at:
+        ts = int(alert.published_at.timestamp())
+        published = f"<!date^{ts}^{{date_short_pretty}} {{time}}|{alert.published_at:%Y-%m-%d %H:%M} UTC>"
+    else:
+        published = "date unknown"
 
     blocks = [
         {
@@ -75,7 +80,13 @@ def alert_message(alert: Alert) -> dict:
                 {"type": "mrkdwn", "text": f"*Threat level*\n{THREAT_LABEL[alert.threat_level]}"},
             ],
         },
-        {"type": "section", "text": {"type": "mrkdwn", "text": _esc(_cut(alert.summary))}},
+        *(
+            [{"type": "context", "elements": [{"type": "mrkdwn", "text": f"_Why:_ {_esc(_cut(alert.threat_reason, 500))}"}]}]
+            if alert.threat_reason
+            else []
+        ),
+        # Slack rejects empty text, so fall back to a placeholder
+        {"type": "section", "text": {"type": "mrkdwn", "text": _esc(_cut(alert.summary)) or "_No summary yet._"}},
         {
             "type": "actions",
             "elements": [

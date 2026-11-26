@@ -9,7 +9,7 @@ from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 Sentiment = Literal["positive", "neutral", "negative"]
-ThreatLevel = Literal["none", "low", "medium", "high"]
+ThreatLevel = Literal["none", "low", "medium", "high", "critical"]
 
 
 class Alert(BaseModel):
@@ -19,12 +19,13 @@ class Alert(BaseModel):
     title: str
     url: str
     source: str = Field(..., description="Publisher, e.g. 'Reuters'")
-    published_at: datetime
+    published_at: Optional[datetime] = None
     company: str = Field(..., description="Company the article is about, e.g. 'Ryanair' or 'easyJet'")
     is_competitor: bool = False
-    sentiment: Sentiment
+    sentiment: Sentiment = Field("neutral", description="Not stored in the Supabase table yet")
     threat_level: ThreatLevel
-    summary: str = Field(..., description="Short business summary from the LLM")
+    summary: str = Field("", description="Short business summary from the LLM")
+    threat_reason: Optional[str] = Field(None, description="Why the LLM chose this threat level")
 
 
 class DraftResult(BaseModel):
