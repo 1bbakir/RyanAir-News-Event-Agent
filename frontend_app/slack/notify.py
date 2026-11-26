@@ -1,16 +1,16 @@
 """Entry point for the BACKEND to push an alert into Slack.
 
 Backend usage (after analysing an article):
-    from app.slack.notify import send_alert
-    send_alert(alert)          # alert is an app.schemas.Alert
+    from frontend_app.slack.notify import send_alert
+    send_alert(alert)          # alert is a frontend_app.schemas.Alert
 """
 import os
 
 from dotenv import load_dotenv
 from slack_sdk import WebClient
 
-from app.schemas import Alert
-from app.slack.blocks import alert_message
+from frontend_app.schemas import Alert
+from frontend_app.slack.blocks import alert_message
 
 load_dotenv()
 
@@ -25,8 +25,8 @@ def send_alert(alert: Alert, channel: str | None = None) -> str:
 
 
 if __name__ == "__main__":
-    # Quick manual test: python -m app.slack.notify
-    from app.mock_backend import MOCK_ALERTS
+    # Quick manual test: python -m frontend_app.slack.notify
+    from frontend_app.mock_backend import MOCK_ALERTS
 
     for a in MOCK_ALERTS:
         print("posted", send_alert(a))

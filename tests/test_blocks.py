@@ -1,6 +1,6 @@
-from app.mock_backend import MOCK_ALERTS
-from app.schemas import DraftResult
-from app.slack import blocks
+from frontend_app.mock_backend import MOCK_ALERTS
+from frontend_app.schemas import DraftResult
+from frontend_app.slack import blocks
 
 
 def test_every_alert_renders_with_button():

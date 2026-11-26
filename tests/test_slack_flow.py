@@ -10,13 +10,13 @@ os.environ.setdefault("SLACK_BOT_TOKEN", "xoxb-test")
 @pytest.fixture(scope="module")
 def server():
     with patch("slack_sdk.WebClient.auth_test", return_value={"ok": True, "user_id": "UB", "bot_id": "B", "team_id": "T"}):
-        from app.slack import server as srv
+        from frontend_app.slack import server as srv
     return srv
 
 
 def _alert_body(article_id="mock-001"):
-    from app.mock_backend import MOCK_ALERTS
-    from app.slack import blocks
+    from frontend_app.mock_backend import MOCK_ALERTS
+    from frontend_app.slack import blocks
 
     msg = blocks.alert_message(next(a for a in MOCK_ALERTS if a.article_id == article_id))
     return {
@@ -33,8 +33,8 @@ def _run_now(server):
 
 
 def test_draft_click_acks_first_then_updates_alert_and_thread(server):
-    with patch("app.backend_client.draft_pr_response") as draft, _run_now(server):
-        from app.schemas import DraftResult
+    with patch("frontend_app.backend_client.draft_pr_response") as draft, _run_now(server):
+        from frontend_app.schemas import DraftResult
 
         draft.return_value = DraftResult(status="ok", draft="Sorry", sources=["crisis_communication.md"])
         client, ack = MagicMock(), MagicMock()
@@ -51,7 +51,7 @@ def test_draft_click_acks_first_then_updates_alert_and_thread(server):
 
 
 def test_refusal_puts_try_again_on_alert(server):
-    with _run_now(server), patch("app.mock_backend.time.sleep"):
+    with _run_now(server), patch("frontend_app.mock_backend.time.sleep"):
         client = MagicMock()
         client.chat_postMessage.return_value = {"ts": "200.2"}
         server.on_draft_clicked(MagicMock(), _alert_body("mock-004"), client)  # mock-004 -> refused
@@ -60,8 +60,8 @@ def test_refusal_puts_try_again_on_alert(server):
 
 
 def test_approve_updates_draft(server):
-    from app.schemas import DraftResult
-    from app.slack import blocks
+    from frontend_app.schemas import DraftResult
+    from frontend_app.slack import blocks
 
     draft = blocks.draft_message(DraftResult(status="ok", draft="Hi", sources=["a.md"]), "U1", "mock-001")
     body = {"actions": [{"value": "mock-001"}], "channel": {"id": "C1"}, "user": {"id": "U2"},

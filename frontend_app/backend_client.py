@@ -5,20 +5,15 @@ Integration with the real backend = change only this file.
 import os
 from typing import Any
 
-from app.schemas import Alert, DraftResult
+from frontend_app.schemas import Alert, DraftResult
 
 USE_MOCK = os.getenv("USE_MOCK_BACKEND", "true").lower() == "true"
 OWN_COMPANY = "ryanair"
 
 
 def alert_from_news_event(row: dict[str, Any]) -> Alert:
-    """Convert a row of the backend's Supabase `news_events` table into an Alert.
+    """Convert a Supabase ``news_events`` row into the Slack alert contract."""
 
-    Column names follow supabase_schema.sql on the backend branch:
-    id, title, summary, article_url, source_name, published_at, company,
-    threat_level, threat_reason. `sentiment` / `is_competitor` are used if the
-    backend adds them later; otherwise sensible defaults are derived here.
-    """
     company = row.get("company") or "Ryanair"
     is_competitor = row.get("is_competitor")
     if is_competitor is None:
@@ -42,23 +37,18 @@ def alert_from_news_event(row: dict[str, Any]) -> Alert:
 def draft_pr_response(article_id: str) -> DraftResult:
     """Run the RAG workflow for an article and return a draft (or a refusal)."""
     if USE_MOCK:
-        from app.mock_backend import draft_pr_response as mock_draft
+        from frontend_app.mock_backend import draft_pr_response as mock_draft
 
         return mock_draft(article_id)
 
     # TODO(integration): replace with the backend's real function, e.g.
-    # from app.rag.drafting import draft_pr_response as real_draft
+    # from backend.rag.drafting import draft_pr_response as real_draft
     # return real_draft(article_id)
     raise NotImplementedError("Real backend not connected yet - set USE_MOCK_BACKEND=true")
 
 
 def approve_draft(article_id: str, user_id: str) -> None:
-    """Record that a PR draft was approved in Slack.
-
-    TODO(integration): the backend can store this (e.g. in news_events).
-    Until then the approval is only shown in Slack.
-    """
+    """Record or publish an approved draft when the real workflow is connected."""
     if USE_MOCK:
         return
-    # from app.db import mark_draft_approved
-    # mark_draft_approved(article_id, approved_by=user_id)
+    raise NotImplementedError("Real approval workflow not connected yet - set USE_MOCK_BACKEND=true")

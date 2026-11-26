@@ -6,7 +6,7 @@ Every function returns a dict with `text` (notification fallback) and either
 
 Design tip: prototype changes in https://app.slack.com/block-kit-builder first.
 """
-from app.schemas import Alert, DraftResult
+from frontend_app.schemas import Alert, DraftResult
 
 # Colour of the vertical bar on the left of the card
 COLOR_HIGH = "#D93025"  # red

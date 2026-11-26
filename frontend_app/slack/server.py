@@ -1,6 +1,6 @@
 """Slack Bolt server: listens for @mentions and button clicks.
 
-Run locally:   python -m app.slack.server
+Run locally:   python -m frontend_app.slack.server
 
 Key rule (brief, 'Asynchronous Processing'): Slack must get ack() within 3 seconds,
 otherwise it retries. So every handler calls ack() FIRST, and the slow LLM/RAG work
@@ -19,10 +19,10 @@ from dotenv import load_dotenv
 from slack_bolt import App
 from slack_sdk import WebClient
 
-from app import backend_client
-from app.mock_backend import MOCK_ALERTS
-from app.schemas import DraftResult
-from app.slack import blocks
+from frontend_app import backend_client
+from frontend_app.mock_backend import MOCK_ALERTS
+from frontend_app.schemas import DraftResult
+from frontend_app.slack import blocks
 
 load_dotenv()
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))

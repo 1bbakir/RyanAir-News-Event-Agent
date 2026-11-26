@@ -1,7 +1,7 @@
 """Alert card states and draft buttons (no Slack connection needed)."""
-from app.mock_backend import MOCK_ALERTS
-from app.schemas import DraftResult
-from app.slack import blocks
+from frontend_app.mock_backend import MOCK_ALERTS
+from frontend_app.schemas import DraftResult
+from frontend_app.slack import blocks
 
 HIGH = MOCK_ALERTS[0]
 

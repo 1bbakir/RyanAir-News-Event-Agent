@@ -6,7 +6,7 @@ Replace with the real backend by setting USE_MOCK_BACKEND=false (see backend_cli
 import time
 from datetime import datetime, timedelta, timezone
 
-from app.schemas import Alert, DraftResult
+from frontend_app.schemas import Alert, DraftResult
 
 _now = datetime.now(timezone.utc)
 

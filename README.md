@@ -1,88 +1,70 @@
 # Ryanair News Event Agent
 
-Slack bot that monitors news about Ryanair and its competitors. Each analysed
-article is posted as a colour-coded alert card. The **Draft PR Response** button
-generates a suggested PR reply in the alert's thread.
+This repository contains a Supabase-backed Slack backend and a separately
+named Slack frontend prototype. The backend is the production entry point;
+the frontend prototype provides the richer mock-card workflow, including
+drafting status and Approve/Regenerate actions.
 
-## Project structure
+## Structure
 
-```
-app/
-├── schemas.py          # Shared data contract (Alert, DraftResult) - backend <-> frontend
-├── backend_client.py   # The only place the Slack frontend calls the backend
-├── mock_backend.py     # Fake alerts/drafts used until the real backend is connected
-└── slack/              # Frontend
-    ├── blocks.py       # Block Kit builders (alert card, loading, draft, help)
-    ├── server.py       # Bolt app: @mentions and button clicks
-    └── notify.py       # send_alert(alert) - used by the backend to post alerts
-tests/                  # pytest tests
-week1/                  # Week 1 prototype (day5_slack_bot.py)
-slack_manifest.yml      # Slack app manifest
-```
+- [`app.py`](./app.py): Supabase-backed Slack Socket Mode application.
+- [`database.py`](./database.py): Supabase persistence layer.
+- [`supabase_schema.sql`](./supabase_schema.sql): database table and timestamp trigger.
+- [`frontend_app/`](./frontend_app/): Slack card builders, mock workflow, and Supabase-row mapping.
+- [`Dockerfile`](./Dockerfile): container entry point for the backend.
 
-## Slack app setup
+Do not run both Slack entry points in the same workspace: both register the
+`draft_pr_response` action.
 
-1. Go to <https://api.slack.com/apps> → **Create New App** → **From a manifest**
-   and paste the contents of `slack_manifest.yml`.
-2. Under **Basic Information → App-Level Tokens**, create a token with the
-   `connections:write` scope (this is the `xapp-...` token).
-3. Install the app to your workspace and copy the **Bot User OAuth Token** (`xoxb-...`).
-4. Invite the bot to a channel: `/invite @Ryanair News Agent`.
+## Setup
 
-## Run locally (macOS / Linux)
+Create a `.env` file locally or set environment variables. Never commit real
+tokens or secret keys.
 
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+```powershell
+$env:SLACK_BOT_TOKEN = "xoxb-your-bot-token"
+$env:SLACK_APP_TOKEN = "xapp-your-app-level-token"
+$env:SUPABASE_URL = "https://your-project.supabase.co"
+$env:SUPABASE_SECRET_KEY = "your-server-only-secret-key"
 ```
 
-Create a `.env` file in the project root (it is git-ignored - never commit it):
+Run [`supabase_schema.sql`](./supabase_schema.sql) once in the Supabase SQL
+Editor, then start the backend:
 
-```
-SLACK_BOT_TOKEN=xoxb-your-bot-token
-SLACK_APP_TOKEN=xapp-your-app-level-token
-SLACK_ALERT_CHANNEL=C0123456789
-```
-
-Start the bot:
-
-```bash
-python -m app.slack.server
+```powershell
+python app.py
 ```
 
-In Slack, mention the bot with `demo` (e.g. `@Ryanair News Agent demo`) to post
-the mock alerts. Click **Draft PR Response** on an alert to get a draft in its thread.
+Slack must have Socket Mode enabled, an app-level token with
+`connections:write`, the `app_mentions:read` and `chat:write` bot scopes,
+the `app_mention` event subscription, and interactivity enabled.
 
-To post the mock alerts to `SLACK_ALERT_CHANNEL` without the server running:
+## Frontend prototype
 
-```bash
-python -m app.slack.notify
+The prototype uses the shared contract in `frontend_app/schemas.py` and maps
+rows from `public.news_events` through `frontend_app/backend_client.py`.
+It can be run separately with:
+
+```powershell
+python -m frontend_app.slack.server
 ```
 
-### Environment variables
+Set `USE_MOCK_BACKEND=true` for its mock drafting workflow. The real drafting
+and approval implementations remain separate integration points; the
+Supabase row mapping is covered by tests.
 
-| Variable | Default | Description |
-| --- | --- | --- |
-| `SLACK_BOT_TOKEN` | - (required) | Bot token `xoxb-...` |
-| `SLACK_APP_TOKEN` | - (required in socket mode) | App-level token `xapp-...` |
-| `SLACK_ALERT_CHANNEL` | - | Channel ID used by `notify.send_alert` |
-| `SLACK_MODE` | `socket` | `socket` for local dev, `http` for webhooks |
-| `SLACK_SIGNING_SECRET` | - | Required only when `SLACK_MODE=http` |
-| `PORT` | `3000` | HTTP port when `SLACK_MODE=http` |
-| `USE_MOCK_BACKEND` | `true` | `false` to use the real backend (see `backend_client.py`) |
-| `LOG_LEVEL` | `INFO` | Python logging level |
+## Docker
 
-## Test
+Build and run the Supabase-backed backend after setting the required runtime
+environment variables:
 
-```bash
-source venv/bin/activate
-python -m pytest -v
+```powershell
+docker build -t ryanair-news-agent .
+docker run --env-file .env ryanair-news-agent
 ```
 
-## Backend integration
+## Tests
 
-- Data format: `app/schemas.py` - any change must be agreed by both sides.
-- Pushing alerts to Slack: `from app.slack.notify import send_alert; send_alert(alert)`.
-- Drafting: replace the `TODO(integration)` in `app/backend_client.py` and set
-  `USE_MOCK_BACKEND=false`.
+```powershell
+python -m pytest -q
+```
