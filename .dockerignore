@@ -1,0 +1,14 @@
+# Never put secrets into the image
+.env
+
+# Not needed inside the container
+venv/
+.venv/
+.git/
+__pycache__/
+*.pyc
+.pytest_cache/
+tests/
+week1/
+*.patch
+.DS_Store
