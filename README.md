@@ -1,70 +1,69 @@
 # Ryanair News Event Agent
 
-Slack Bolt test app for a Ryanair news-monitoring bot. When the bot is mentioned,
-it posts a hardcoded news alert card. The **Draft PR Response** button replies in
-the same Slack thread with a placeholder response and citation.
+The repository contains a Supabase-backed Slack backend and a separately
+named Slack frontend prototype. The backend is the production entry point;
+the frontend prototype remains available for its richer mock-card workflow.
 
-## Slack app setup
+## Structure
 
-1. Create a Slack app at <https://api.slack.com/apps>.
-2. Enable **Socket Mode** and create an app-level token with the `connections:write` scope.
-3. Add bot token scopes `app_mentions:read`, `chat:write`, and `channels:history` under **OAuth & Permissions**.
-4. Subscribe to the `app_mention` event under **Event Subscriptions**.
-5. Under **Interactivity & Shortcuts**, enable interactivity. Socket Mode handles the request delivery.
-6. Install the app to a test workspace and invite it to a channel.
+- [`app.py`](./app.py): Supabase-backed Slack Socket Mode application.
+- [`database.py`](./database.py): Supabase persistence layer.
+- [`supabase_schema.sql`](./supabase_schema.sql): database table and timestamp trigger.
+- `frontend_app/`: prototype Slack card builders and Supabase-row mapping.
+- `Dockerfile`: container entry point for the backend.
 
-## Run locally
+Do not run both Slack entry points in the same workspace: both register the
+`draft_pr_response` action.
+
+## Setup
+
+Create a `.env` file locally or set environment variables. Never commit real
+tokens or secret keys.
 
 ```powershell
-py -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
 $env:SLACK_BOT_TOKEN = "xoxb-your-bot-token"
 $env:SLACK_APP_TOKEN = "xapp-your-app-level-token"
-python app.py
-```
-
-Mention the bot in a channel, for example `@Ryanair News Bot`, and it will post
-the sample card. Click **Draft PR Response** to add the placeholder draft to the
-alert thread.
-
-## Test
-
-```powershell
-pip install pytest
-pytest
-```
-
-Never commit real Slack tokens. Use `.env` or environment variables locally.
-
-## Supabase setup
-
-1. Create a Supabase project.
-2. Open the SQL Editor and run [`supabase_schema.sql`](./supabase_schema.sql).
-3. Copy the project URL and a server-only secret key into your environment:
-
-```powershell
 $env:SUPABASE_URL = "https://your-project.supabase.co"
 $env:SUPABASE_SECRET_KEY = "your-server-only-secret-key"
 ```
 
-The backend uses [`database.py`](./database.py) to store news events, attach the
-Slack message ID, load the event when the button is clicked, and save the draft
-and citation. The secret key must never be exposed to the Slack client, browser,
-or committed to GitHub.
+Run [`supabase_schema.sql`](./supabase_schema.sql) once in the Supabase SQL
+Editor, then start the backend:
 
-The table has Row Level Security enabled. The server-side key is used only by
-this trusted backend; add explicit policies before exposing `news_events` to a
-frontend or other client.
+```powershell
+python app.py
+```
 
-The backend implementation is in [`app.py`](./app.py) and the frontend
-prototype is kept separately under `frontend_app/`. The `backend` branch is
-the feature branch being merged into GitHub's `main` branch; `main` remains the
-default branch. Do not run both Slack entry points at the same time because
-they both register the `draft_pr_response` action.
+Slack must have Socket Mode enabled, an app-level token with
+`connections:write`, the `app_mentions:read` and `chat:write` bot scopes,
+the `app_mention` event subscription, and interactivity enabled.
 
-During the merge, the frontend prototype is kept under `frontend_app/` so it
-does not shadow the backend entry point [`app.py`](./app.py). The backend is run
-with `python app.py`; the prototype server, if needed for isolated testing, is
-run with `python -m frontend_app.slack.server`. These are separate prototypes
-and must not be started together in the same Slack workspace.
+## Frontend prototype
+
+The prototype uses the shared contract in `frontend_app/schemas.py` and maps
+rows from `public.news_events` through
+`frontend_app/backend_client.py`. It can be run separately with:
+
+```powershell
+python -m frontend_app.slack.server
+```
+
+Set `USE_MOCK_BACKEND=true` for its mock drafting workflow. The real drafting
+implementation remains a separate TODO; the Supabase row mapping is covered
+by tests.
+
+## Docker
+
+Build and run the Supabase-backed backend after setting the required runtime
+environment variables:
+
+```powershell
+docker build -t ryanair-news-agent .
+docker run --env-file .env ryanair-news-agent
+```
+
+## Tests
+
+```powershell
+python -m pytest -q
+```
