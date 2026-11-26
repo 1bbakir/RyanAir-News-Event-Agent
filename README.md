@@ -36,3 +36,35 @@ pytest
 ```
 
 Never commit real Slack tokens. Use `.env` or environment variables locally.
+
+## Supabase setup
+
+1. Create a Supabase project.
+2. Open the SQL Editor and run [`supabase_schema.sql`](./supabase_schema.sql).
+3. Copy the project URL and a server-only secret key into your environment:
+
+```powershell
+$env:SUPABASE_URL = "https://your-project.supabase.co"
+$env:SUPABASE_SECRET_KEY = "your-server-only-secret-key"
+```
+
+The backend uses [`database.py`](./database.py) to store news events, attach the
+Slack message ID, load the event when the button is clicked, and save the draft
+and citation. The secret key must never be exposed to the Slack client, browser,
+or committed to GitHub.
+
+The table has Row Level Security enabled. The server-side key is used only by
+this trusted backend; add explicit policies before exposing `news_events` to a
+frontend or other client.
+
+The backend implementation is in [`app.py`](./app.py) and the frontend
+prototype is kept separately under `frontend_app/`. The `backend` branch is
+the feature branch being merged into GitHub's `main` branch; `main` remains the
+default branch. Do not run both Slack entry points at the same time because
+they both register the `draft_pr_response` action.
+
+During the merge, the frontend prototype is kept under `frontend_app/` so it
+does not shadow the backend entry point [`app.py`](./app.py). The backend is run
+with `python app.py`; the prototype server, if needed for isolated testing, is
+run with `python -m frontend_app.slack.server`. These are separate prototypes
+and must not be started together in the same Slack workspace.
