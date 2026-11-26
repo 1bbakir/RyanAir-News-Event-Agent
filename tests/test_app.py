@@ -95,3 +95,50 @@ def test_draft_button_loads_and_saves_event(monkeypatch) -> None:
     assert repository.saved_draft is not None
     assert repository.saved_draft[0] == "event-123"
     assert sent["thread_ts"] == "123.000"
+
+
+def test_citation_is_escaped_for_slack(monkeypatch) -> None:
+    repository = FakeRepository()
+    monkeypatch.setattr(app, "get_repository", lambda: repository)
+    sent: dict[str, object] = {}
+
+    def get_event(event_id: str) -> dict[str, object]:
+        return {"article_url": "https://example.com/?a=1&b=<unsafe>"}
+
+    repository.get_news_event = get_event  # type: ignore[method-assign]
+    app.handle_draft_pr_response(
+        lambda: None,
+        {"actions": [{"value": "event-123"}], "message": {"ts": "123.456"}},
+        lambda **kwargs: sent.update(kwargs),
+    )
+
+    assert "&amp;" in sent["text"]
+    assert "&lt;unsafe&gt;" in sent["text"]
+
+
+def test_mention_requires_slack_message_timestamp(monkeypatch) -> None:
+    repository = FakeRepository()
+    monkeypatch.setattr(app, "get_repository", lambda: repository)
+
+    def say(**kwargs):
+        return {}
+
+    try:
+        app.handle_app_mention({"ts": "123.000", "channel": "C123"}, say)
+    except RuntimeError as error:
+        assert "timestamp" in str(error)
+    else:
+        raise AssertionError("missing Slack timestamp should fail")
+
+
+def test_malformed_draft_action_is_reported(monkeypatch) -> None:
+    monkeypatch.setattr(app, "get_repository", lambda: FakeRepository())
+    sent: dict[str, object] = {}
+
+    app.handle_draft_pr_response(
+        lambda: None,
+        {"actions": [], "message": {"ts": "123.456"}},
+        lambda **kwargs: sent.update(kwargs),
+    )
+
+    assert "valid news event ID" in sent["text"]

@@ -44,12 +44,21 @@ class NewsEventRepository:
         channel_id: str,
         message_ts: str | None,
     ) -> None:
-        self.client.table("news_events").update(
-            {
-                "slack_channel_id": channel_id,
-                "slack_message_ts": message_ts,
-            }
-        ).eq("id", event_id).execute()
+        response = (
+            self.client.table("news_events")
+            .update(
+                {
+                    "slack_channel_id": channel_id,
+                    "slack_message_ts": message_ts,
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                }
+            )
+            .eq("id", event_id)
+            .select("id")
+            .execute()
+        )
+        if not response.data:
+            raise LookupError(f"News event {event_id} was not found")
 
     def get_news_event(self, event_id: str) -> dict[str, Any]:
         response = (
@@ -64,10 +73,20 @@ class NewsEventRepository:
         return response.data
 
     def save_pr_draft(self, event_id: str, draft: str, citation: str) -> None:
-        self.client.table("news_events").update(
-            {
-                "pr_draft": draft,
-                "pr_citation": citation,
-                "pr_draft_generated_at": datetime.now(timezone.utc).isoformat(),
-            }
-        ).eq("id", event_id).execute()
+        now = datetime.now(timezone.utc).isoformat()
+        response = (
+            self.client.table("news_events")
+            .update(
+                {
+                    "pr_draft": draft,
+                    "pr_citation": citation,
+                    "pr_draft_generated_at": now,
+                    "updated_at": now,
+                }
+            )
+            .eq("id", event_id)
+            .select("id")
+            .execute()
+        )
+        if not response.data:
+            raise LookupError(f"News event {event_id} was not found")

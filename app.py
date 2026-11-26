@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import logging
 from typing import Any
 
 from slack_bolt import App
@@ -11,12 +12,21 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 from database import NewsEventRepository, create_supabase_client
 
 
+logger = logging.getLogger(__name__)
+
+
 NEWS_URL = "https://example.com/ryanair-airport-strike"
 PLACEHOLDER_DRAFT = (
     "We are aware of reports that an airport strike has affected some Ryanair "
     "flights. Our teams are working to support impacted customers and will share "
     "further updates as more information becomes available."
 )
+
+
+def escape_slack_text(value: str) -> str:
+    """Escape user- or database-controlled text before inserting Slack mrkdwn."""
+
+    return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 SAMPLE_NEWS_EVENT: dict[str, Any] = {
     "title": "Ryanair cancels flights after an airport strike",
@@ -109,6 +119,8 @@ def handle_app_mention(event: dict[str, Any], say: Any) -> None:
         thread_ts=event.get("ts"),
     )
     message_ts = response.get("ts") if response else None
+    if not message_ts:
+        raise RuntimeError("Slack did not return a timestamp for the news alert")
     repository.attach_slack_message(
         event_id,
         channel_id=str(event["channel"]),
@@ -121,24 +133,38 @@ def handle_draft_pr_response(ack: Any, body: dict[str, Any], say: Any) -> None:
     """Load the event, save a placeholder draft, and reply in its thread."""
 
     ack()
-    repository = get_repository()
-    action = body.get("actions", [{}])[0]
-    event_id = str(action.get("value", ""))
-    if not event_id:
-        raise ValueError("Draft button payload did not include a news event ID")
-
-    news_event = repository.get_news_event(event_id)
-    citation = str(news_event["article_url"])
-    draft = news_event.get("pr_draft") or PLACEHOLDER_DRAFT
-    repository.save_pr_draft(event_id, draft, citation)
-
     message = body.get("message", {})
     container = body.get("container", {})
     thread_ts = container.get("thread_ts") or message.get("ts")
+    actions = body.get("actions") or []
+    action = actions[0] if actions and isinstance(actions[0], dict) else {}
+    event_id = str(action.get("value", ""))
+
+    if not event_id:
+        say(
+            text="This draft button did not include a valid news event ID.",
+            thread_ts=thread_ts,
+        )
+        return
+
+    try:
+        repository = get_repository()
+        news_event = repository.get_news_event(event_id)
+        citation = str(news_event["article_url"])
+        draft = news_event.get("pr_draft") or PLACEHOLDER_DRAFT
+        repository.save_pr_draft(event_id, draft, citation)
+    except Exception:
+        logger.exception("Could not generate a draft for news event %s", event_id)
+        say(
+            text="I couldn't load this news event from the database. Please try again.",
+            thread_ts=thread_ts,
+        )
+        return
+
     say(
         text=(
             f"*Draft PR response (placeholder)*\n\n{draft}\n\n"
-            f"_Citation: {citation}_"
+            f"_Citation: {escape_slack_text(citation)}_"
         ),
         thread_ts=thread_ts,
     )
