@@ -22,10 +22,10 @@ class Alert(BaseModel):
     published_at: Optional[datetime] = None
     company: str = Field(..., description="Company the article is about, e.g. 'Ryanair' or 'easyJet'")
     is_competitor: bool = False
-    sentiment: Sentiment = "neutral"
+    sentiment: Sentiment = Field("neutral", description="Not stored in the Supabase table yet")
     threat_level: ThreatLevel
     summary: str = Field("", description="Short business summary from the LLM")
-    threat_reason: Optional[str] = Field(None, description="Why the threat level was selected")
+    threat_reason: Optional[str] = Field(None, description="Why the LLM chose this threat level")
 
 
 class DraftResult(BaseModel):

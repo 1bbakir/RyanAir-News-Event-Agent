@@ -45,3 +45,10 @@ def draft_pr_response(article_id: str) -> DraftResult:
     # from backend.rag.drafting import draft_pr_response as real_draft
     # return real_draft(article_id)
     raise NotImplementedError("Real backend not connected yet - set USE_MOCK_BACKEND=true")
+
+
+def approve_draft(article_id: str, user_id: str) -> None:
+    """Record or publish an approved draft when the real workflow is connected."""
+    if USE_MOCK:
+        return
+    raise NotImplementedError("Real approval workflow not connected yet - set USE_MOCK_BACKEND=true")

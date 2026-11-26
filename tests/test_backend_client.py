@@ -14,6 +14,7 @@ SUPABASE_ROW = {
     "company": "Ryanair",
     "threat_level": "critical",
     "threat_reason": "Flight cancellations may affect customers and reputation.",
+    "pr_draft": None,
     "created_at": "2026-11-17T18:00:00+00:00",
 }
 

@@ -1,16 +1,17 @@
 # Ryanair News Event Agent
 
-The repository contains a Supabase-backed Slack backend and a separately
+This repository contains a Supabase-backed Slack backend and a separately
 named Slack frontend prototype. The backend is the production entry point;
-the frontend prototype remains available for its richer mock-card workflow.
+the frontend prototype provides the richer mock-card workflow, including
+drafting status and Approve/Regenerate actions.
 
 ## Structure
 
 - [`app.py`](./app.py): Supabase-backed Slack Socket Mode application.
 - [`database.py`](./database.py): Supabase persistence layer.
 - [`supabase_schema.sql`](./supabase_schema.sql): database table and timestamp trigger.
-- `frontend_app/`: prototype Slack card builders and Supabase-row mapping.
-- `Dockerfile`: container entry point for the backend.
+- [`frontend_app/`](./frontend_app/): Slack card builders, mock workflow, and Supabase-row mapping.
+- [`Dockerfile`](./Dockerfile): container entry point for the backend.
 
 Do not run both Slack entry points in the same workspace: both register the
 `draft_pr_response` action.
@@ -41,16 +42,16 @@ the `app_mention` event subscription, and interactivity enabled.
 ## Frontend prototype
 
 The prototype uses the shared contract in `frontend_app/schemas.py` and maps
-rows from `public.news_events` through
-`frontend_app/backend_client.py`. It can be run separately with:
+rows from `public.news_events` through `frontend_app/backend_client.py`.
+It can be run separately with:
 
 ```powershell
 python -m frontend_app.slack.server
 ```
 
 Set `USE_MOCK_BACKEND=true` for its mock drafting workflow. The real drafting
-implementation remains a separate TODO; the Supabase row mapping is covered
-by tests.
+and approval implementations remain separate integration points; the
+Supabase row mapping is covered by tests.
 
 ## Docker
 

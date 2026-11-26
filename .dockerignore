@@ -1,4 +1,7 @@
+# Never put secrets into the image
 .env
+
+# Not needed inside the container
 venv/
 .venv/
 .git/
