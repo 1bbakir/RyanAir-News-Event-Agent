@@ -50,3 +50,15 @@ def draft_pr_response(article_id: str) -> DraftResult:
     # from app.rag.drafting import draft_pr_response as real_draft
     # return real_draft(article_id)
     raise NotImplementedError("Real backend not connected yet - set USE_MOCK_BACKEND=true")
+
+
+def approve_draft(article_id: str, user_id: str) -> None:
+    """Record that a PR draft was approved in Slack.
+
+    TODO(integration): the backend can store this (e.g. in news_events).
+    Until then the approval is only shown in Slack.
+    """
+    if USE_MOCK:
+        return
+    # from app.db import mark_draft_approved
+    # mark_draft_approved(article_id, approved_by=user_id)
